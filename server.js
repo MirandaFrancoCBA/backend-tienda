@@ -6,11 +6,8 @@ import fs from "fs";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
+const app = express(); // ✅ PRIMERO crear app
 
-app.listen(PORT, () => console.log("Servidor corriendo 🚀 en puerto", PORT));
-
-const app = express();
 app.use(cors());
 app.use(express.json());
 
@@ -18,7 +15,7 @@ mercadopago.configure({
   access_token: process.env.MP_ACCESS_TOKEN
 });
 
-// 👉 guardar pedido simple (archivo)
+// 👉 guardar pedido
 function guardarPedido(pedido) {
   let pedidos = [];
 
@@ -32,7 +29,7 @@ function guardarPedido(pedido) {
   fs.writeFileSync("pedidos.json", JSON.stringify(pedidos, null, 2));
 }
 
-// 👉 crear pago
+// 👉 endpoint pago
 app.post("/crear-pago", async (req, res) => {
   const { items } = req.body;
 
@@ -61,8 +58,7 @@ app.post("/crear-pago", async (req, res) => {
     const response = await mercadopago.preferences.create(preference);
 
     res.json({
-      url: response.body.init_point,
-      pedidoId: pedido.id
+      url: response.body.init_point
     });
 
   } catch (err) {
@@ -71,4 +67,9 @@ app.post("/crear-pago", async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log("Servidor corriendo 🚀"));
+// ✅ SIEMPRE AL FINAL
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("Servidor corriendo 🚀 en puerto", PORT);
+});
