@@ -1,18 +1,18 @@
 import express from "express";
 import cors from "cors";
-import mercadopago from "mercadopago";
+import { MercadoPagoConfig, Preference } from "mercadopago";
 import dotenv from "dotenv";
 import fs from "fs";
 
 dotenv.config();
 
-const app = express(); // ✅ PRIMERO crear app
+const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-mercadopago.configure({
-  access_token: process.env.MP_ACCESS_TOKEN
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN
 });
 
 // 👉 guardar pedido
@@ -33,14 +33,6 @@ function guardarPedido(pedido) {
 app.post("/crear-pago", async (req, res) => {
   const { items } = req.body;
 
-  const pedido = {
-    id: Date.now(),
-    items,
-    fecha: new Date().toISOString()
-  };
-
-  guardarPedido(pedido);
-
   const preference = {
     items: items.map(p => ({
       title: `${p.nombre} (${p.variante})`,
@@ -55,10 +47,14 @@ app.post("/crear-pago", async (req, res) => {
   };
 
   try {
-    const response = await mercadopago.preferences.create(preference);
+    const preferenceClient = new Preference(client);
+
+    const response = await preferenceClient.create({
+      body: preference
+    });
 
     res.json({
-      url: response.body.init_point
+      url: response.init_point
     });
 
   } catch (err) {
